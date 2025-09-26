@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARK: Колесо Удачи</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Teko:wght@400;700&display=swap');
+
+        :root {
+            --ark-orange: #f39c12;
+            --ark-gold: #f1c40f;
+            --ark-red: #c0392b;
+            --ark-dark-bg: #1a2225;
+            --text-dark: #2c3e50;
+        }
+
+        body {
+            font-family: 'Teko', sans-serif;
+            background-color: var(--ark-dark-bg);
+            background-image: url('https://images.alphacoders.com/669/669929.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+        
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: -1;
+        }
+
+        h1 {
+            font-size: clamp(2.5rem, 8vw, 4.5rem);
+            color: var(--ark-orange);
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            text-shadow: 0 0 10px var(--ark-orange), 0 0 20px black;
+            margin-bottom: 20px;
+        }
+
+        .wheel-container {
+            position: relative;
+            width: clamp(320px, 90vw, 550px);
+            height: clamp(320px, 90vw, 550px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+
+        #wheel-canvas {
+            width: 100%;
+            height: 100%;
+            transition: transform 6s cubic-bezier(0.33, 1, 0.68, 1);
+        }
+        
+        .wheel-center {
+            position: absolute;
+            width: 12%;
+            height: 12%;
+            background: #2c3e50;
+            border-radius: 50%;
+            border: 4px solid var(--ark-gold);
+            z-index: 10;
+            box-shadow: 0 0 15px rgba(0,0,0,0.7);
+        }
+        
+        .pointer {
+            position: absolute;
+            top: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 20px solid transparent;
+            border-right: 20px solid transparent;
+            border-top: 30px solid var(--ark-red);
+            z-index: 100;
+            filter: drop-shadow(0px -2px 3px rgba(0,0,0,0.5));
+        }
+
+        .spin-button {
+            padding: 15px 40px;
+            font-family: 'Teko', sans-serif;
+            font-size: clamp(1.5rem, 5vw, 2.2rem);
+            text-transform: uppercase;
+            color: white;
+            background: linear-gradient(145deg, var(--ark-red), #8e2419);
+            border: 3px solid var(--ark-gold);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            letter-spacing: 2px;
+            font-weight: 600;
+        }
+
+        .spin-button:hover:not(:disabled) {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
+        }
+
+        .spin-button:active:not(:disabled) {
+            transform: translateY(1px) scale(1);
+        }
+
+        .spin-button:disabled {
+            cursor: not-allowed;
+            background: #555;
+            box-shadow: none;
+            opacity: 0.6;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.8);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: var(--ark-dark-bg);
+            padding: 30px 40px;
+            border: 5px solid var(--ark-gold);
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 0 30px rgba(0,0,0,0.8);
+            animation: fadeIn 0.5s ease;
+            min-width: 300px;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.8); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .modal-content h2 {
+            margin-top: 0;
+            font-size: clamp(2rem, 6vw, 2.8rem);
+            color: var(--ark-gold);
+             text-shadow: 0 0 10px black;
+        }
+
+        #result-text {
+            font-size: clamp(1.8rem, 5vw, 2.5rem);
+            color: var(--ark-orange);
+            margin: 20px 0;
+            font-weight: 600;
+        }
+        
+        .close-button {
+           padding: 12px 35px;
+           font-size: 1.5rem;
+           margin-top: 10px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <h1>Колесо Выжившего</h1>
+
+    <div class="wheel-container">
+        <div class="pointer"></div>
+        <canvas id="wheel-canvas" width="550" height="550"></canvas>
+        <div class="wheel-center"></div>
+    }
+    </div>
+
+    <button class="spin-button" id="spin-button">Крутить!</button>
+
+    <div class="modal" id="result-modal">
+        <div class="modal-content">
+            <h2>Ваша Награда!</h2>
+            <p id="result-text"></p>
+            <button class="spin-button close-button" id="close-button">Закрыть</button>
+        </div>
+    </div>
+
+
+    <script>
+        const canvas = document.getElementById('wheel-canvas');
+        const spinButton = document.getElementById('spin-button');
+        const resultModal = document.getElementById('result-modal');
+        const resultText = document.getElementById('result-text');
+        const closeButton = document.getElementById('close-button');
+        const ctx = canvas.getContext('2d');
+
+        const items = [
+            "T-Rex", "Dodo", "Raptor", "Argentavis", "Tek Rifle", 
+            "Metal x100", "Polymer x50", "Crystal x200", "Ascendant Bow", "Giga Heart",
+            "Wyvern Egg", "Black Pearls", "Element x10", "Ankylosaurus", "Fabricator",
+            "Flak Armor Set", "Longneck Rifle", "Quetzal", "Spinosaurus", "MC Saddle"
+        ];
+        
+        const segmentCount = items.length;
+        const segmentAngle = 2 * Math.PI / segmentCount;
+        
+        const radius = canvas.width / 2;
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+
+        function drawWheel() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Цвета из темы ARK
+            const segmentColor = getComputedStyle(document.documentElement).getPropertyValue('--ark-orange');
+            const lineColor = '#a07106';
+            const textColor = getComputedStyle(document.documentElement).getPropertyValue('--text-dark');
+            const goldBorder = getComputedStyle(document.documentElement).getPropertyValue('--ark-gold');
+
+            // Рисуем внешнюю золотую рамку
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius * 0.98, 0, 2 * Math.PI);
+            ctx.strokeStyle = goldBorder;
+            ctx.lineWidth = radius * 0.05;
+            ctx.stroke();
+
+            items.forEach((item, index) => {
+                const startAngle = index * segmentAngle;
+                const endAngle = startAngle + segmentAngle;
+
+                // Рисуем сегмент
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.arc(centerX, centerY, radius * 0.95, startAngle, endAngle);
+                ctx.closePath();
+                ctx.fillStyle = segmentColor;
+                ctx.fill();
+
+                // Рисуем разделительную линию
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.arc(centerX, centerY, radius * 0.95, endAngle, endAngle, false);
+                ctx.lineTo(centerX, centerY);
+                ctx.strokeStyle = lineColor;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Рисуем текст
+                ctx.save();
+                ctx.translate(centerX, centerY);
+                ctx.rotate(startAngle + segmentAngle / 2);
+                ctx.textAlign = "center";
+                ctx.fillStyle = textColor;
+                const fontSize = radius * 0.07;
+                ctx.font = `700 ${fontSize}px Teko`;
+                // Выводим текст в верхнем регистре для стилизации
+                ctx.fillText(item.toUpperCase(), radius * 0.65, fontSize * 0.35);
+                ctx.restore();
+            });
+        }
+        
+        drawWheel();
+
+        let isSpinning = false;
+        let currentRotation = 0;
+
+        spinButton.addEventListener('click', () => {
+            if (isSpinning) return;
+
+            isSpinning = true;
+            spinButton.disabled = true;
+
+            const randomExtraRotation = Math.floor(Math.random() * 360);
+            const totalRotations = 360 * 6;
+            const finalRotation = totalRotations + randomExtraRotation;
+            
+            currentRotation += finalRotation;
+            canvas.style.transform = `rotate(${currentRotation}deg)`;
+        });
+
+        canvas.addEventListener('transitionend', () => {
+            isSpinning = false;
+            spinButton.disabled = false;
+            
+            const actualRotation = currentRotation % 360;
+            const normalizedRotation = (360 - actualRotation) % 360;
+
+            const segmentAngleDegrees = 360 / segmentCount;
+            const winningSegmentIndex = Math.floor(normalizedRotation / segmentAngleDegrees);
+            const winningItem = items[winningSegmentIndex];
+
+            resultText.textContent = winningItem;
+            resultModal.style.display = 'flex';
+        });
+        
+        closeButton.addEventListener('click', () => {
+            resultModal.style.display = 'none';
+        });
+    </script>
+
+</body>
+</html>
+
